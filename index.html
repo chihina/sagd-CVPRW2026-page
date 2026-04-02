@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>End-to-End Shared Attention Estimation via Group Detection with Feedback Refinement</title>
+
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Noto+Sans:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet" />
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <!-- Academicons -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/jpswalsh/academicons@1/css/academicons.min.css" />
+  <!-- Bulma CSS -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css" />
+
+  <style>
+    :root {
+      --brand: #2563eb;
+      --brand-light: #dbeafe;
+      --badge-bg: #1d4ed8;
+      --collab-bg: #fefce8;
+      --collab-border: #ca8a04;
+    }
+
+    body {
+      font-family: 'Noto Sans', sans-serif;
+      background: #fff;
+      color: #1a1a1a;
+    }
+
+    /* ── Hero ─────────────────────────────────────────────── */
+    .hero-section {
+      background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%);
+      color: #fff;
+      padding: 3.5rem 1.5rem 3rem;
+      text-align: center;
+    }
+
+    .venue-badge {
+      display: inline-block;
+      background: var(--badge-bg);
+      color: #fff;
+      font-size: 0.82rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      padding: 0.35rem 1rem;
+      border-radius: 999px;
+      margin-bottom: 1.4rem;
+      text-transform: uppercase;
+    }
+
+    .paper-title {
+      font-family: 'Google Sans', sans-serif;
+      font-size: clamp(1.55rem, 3.5vw, 2.4rem);
+      font-weight: 700;
+      line-height: 1.3;
+      max-width: 900px;
+      margin: 0 auto 1.8rem;
+    }
+
+    .authors {
+      font-size: 1.05rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .author-link {
+      color: #93c5fd;
+      text-decoration: none;
+      font-weight: 500;
+    }
+    .author-link:hover { text-decoration: underline; }
+
+    .affiliations {
+      font-size: 0.88rem;
+      color: #cbd5e1;
+      margin-top: 0.6rem;
+      line-height: 1.8;
+    }
+
+    .sup { font-size: 0.7rem; vertical-align: super; margin-right: 1px; }
+
+    /* ── Collaboration banner ─────────────────────────────── */
+    .collab-banner {
+      background: var(--collab-bg);
+      border-left: 4px solid var(--collab-border);
+      padding: 0.9rem 1.4rem;
+      border-radius: 0 6px 6px 0;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      max-width: 760px;
+      margin: 1.8rem auto 0;
+    }
+    .collab-banner .icon { color: var(--collab-border); font-size: 1.1rem; }
+    .collab-banner p { margin: 0; font-size: 0.93rem; color: #78350f; font-weight: 500; }
+
+    /* ── Buttons ──────────────────────────────────────────── */
+    .btn-row {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 0.75rem;
+      margin-top: 2rem;
+    }
+
+    .btn-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      padding: 0.55rem 1.25rem;
+      border-radius: 8px;
+      font-size: 0.92rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: opacity 0.15s;
+      border: 2px solid rgba(255,255,255,0.35);
+      color: #fff;
+      background: rgba(255,255,255,0.1);
+      backdrop-filter: blur(4px);
+    }
+    .btn-link:hover { opacity: 0.8; color: #fff; }
+    .btn-link.primary { background: #2563eb; border-color: #2563eb; }
+
+    /* ── Content sections ─────────────────────────────────── */
+    .section-inner {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 0 1.25rem;
+    }
+
+    .section-title {
+      font-family: 'Google Sans', sans-serif;
+      font-size: 1.65rem;
+      font-weight: 700;
+      color: #0f172a;
+      margin-bottom: 1rem;
+      text-align: center;
+    }
+
+    .section-title::after {
+      content: '';
+      display: block;
+      width: 48px;
+      height: 3px;
+      background: var(--brand);
+      margin: 0.4rem auto 0;
+      border-radius: 2px;
+    }
+
+    /* ── Teaser ───────────────────────────────────────────── */
+    .teaser-placeholder {
+      background: #f1f5f9;
+      border: 2px dashed #cbd5e1;
+      border-radius: 12px;
+      padding: 3.5rem 2rem;
+      text-align: center;
+      color: #64748b;
+      font-size: 0.95rem;
+    }
+    .teaser-placeholder .icon-big { font-size: 2.5rem; margin-bottom: 0.5rem; color: #94a3b8; }
+
+    /* ── Abstract ─────────────────────────────────────────── */
+    .abstract-box {
+      background: #f8fafc;
+      border-left: 4px solid var(--brand);
+      border-radius: 0 8px 8px 0;
+      padding: 1.5rem 1.75rem;
+      font-size: 0.97rem;
+      line-height: 1.85;
+      color: #334155;
+    }
+
+    /* ── Method / Results placeholder ────────────────────── */
+    .figure-placeholder {
+      background: #f1f5f9;
+      border: 2px dashed #cbd5e1;
+      border-radius: 10px;
+      padding: 2.5rem 2rem;
+      text-align: center;
+      color: #64748b;
+      font-size: 0.9rem;
+      margin-bottom: 1rem;
+    }
+
+    .caption {
+      font-size: 0.875rem;
+      color: #475569;
+      text-align: center;
+      margin-top: 0.6rem;
+      line-height: 1.55;
+    }
+
+    /* ── Results table ────────────────────────────────────── */
+    .results-table-wrap {
+      overflow-x: auto;
+      margin: 1.5rem 0 0.5rem;
+    }
+
+    .results-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+      text-align: center;
+    }
+
+    .results-table th {
+      background: #1e3a5f;
+      color: #fff;
+      padding: 0.55rem 0.75rem;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .results-table td {
+      padding: 0.5rem 0.75rem;
+      border-bottom: 1px solid #e2e8f0;
+      white-space: nowrap;
+    }
+
+    .results-table tr:nth-child(even) td { background: #f8fafc; }
+    .results-table tr.ours td { font-weight: 700; background: #eff6ff; }
+    .results-table td.best { color: #dc2626; font-weight: 700; }
+
+    .results-table .group-header {
+      background: #334155;
+      color: #e2e8f0;
+      font-size: 0.8rem;
+      letter-spacing: 0.04em;
+      padding: 0.3rem 0.75rem;
+    }
+
+    /* ── Method step cards ────────────────────────────────── */
+    .method-steps {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 1.1rem;
+      margin: 1.5rem 0;
+    }
+
+    .step-card {
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 1.2rem 1.3rem;
+      position: relative;
+    }
+
+    .step-card .step-num {
+      display: inline-block;
+      background: var(--brand);
+      color: #fff;
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 0.15rem 0.55rem;
+      border-radius: 999px;
+      margin-bottom: 0.55rem;
+    }
+
+    .step-card h4 {
+      font-family: 'Google Sans', sans-serif;
+      font-size: 0.97rem;
+      font-weight: 700;
+      color: #0f172a;
+      margin: 0 0 0.4rem;
+    }
+
+    .step-card p {
+      font-size: 0.87rem;
+      color: #475569;
+      line-height: 1.6;
+      margin: 0;
+    }
+
+    /* ── BibTeX ───────────────────────────────────────────── */
+    .bibtex-box {
+      position: relative;
+      background: #0f172a;
+      color: #e2e8f0;
+      border-radius: 10px;
+      padding: 1.5rem 1.75rem;
+      font-family: 'Courier New', monospace;
+      font-size: 0.85rem;
+      line-height: 1.75;
+      overflow-x: auto;
+    }
+
+    .copy-btn {
+      position: absolute;
+      top: 0.75rem;
+      right: 0.75rem;
+      background: #1e293b;
+      color: #94a3b8;
+      border: 1px solid #334155;
+      border-radius: 6px;
+      padding: 0.3rem 0.75rem;
+      font-size: 0.78rem;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .copy-btn:hover { background: #334155; color: #e2e8f0; }
+
+    /* ── Footer ───────────────────────────────────────────── */
+    footer {
+      background: #0f172a;
+      color: #94a3b8;
+      text-align: center;
+      padding: 2rem 1rem;
+      font-size: 0.83rem;
+      line-height: 1.7;
+    }
+    footer a { color: #93c5fd; text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+
+    /* ── Responsive ───────────────────────────────────────── */
+    @media (max-width: 600px) {
+      .btn-link { font-size: 0.82rem; padding: 0.5rem 0.9rem; }
+    }
+  </style>
+</head>
+
+<body>
+
+<!-- ======================================================
+     HERO
+====================================================== -->
+<section class="hero-section">
+  <div class="section-inner">
+
+    <div class="venue-badge">
+      CVPR 2026 Workshop &mdash; GAZE 2026
+    </div>
+
+    <h1 class="paper-title">
+      End-to-End Shared Attention Estimation via Group Detection with Feedback Refinement
+    </h1>
+
+    <p class="authors">
+      <a class="author-link" href="https://chihina.github.io/portfolio_english.html" target="_blank">Chihiro Nakatani</a><sup class="sup">1</sup>&ensp;
+      <a class="author-link" href="https://www.toyota-ti.ac.jp/Lab/Denshi/iim/index.html" target="_blank">Norimichi Ukita</a><sup class="sup">1</sup>&ensp;
+      <a class="author-link" href="https://www.idiap.ch/~odobez/" target="_blank">Jean-Marc Odobez</a><sup class="sup">2,3</sup>
+    </p>
+
+    <p class="affiliations">
+      <sup>1</sup>Toyota Technological Institute, Japan&emsp;
+      <sup>2</sup>Idiap Research Institute, Switzerland&emsp;
+      <sup>3</sup>École polytechnique fédérale de Lausanne (EPFL), Switzerland
+    </p>
+
+    <!-- Collaboration highlight -->
+    <div class="collab-banner">
+      <span class="icon"><i class="fas fa-star"></i></span>
+      <p>
+        In collaboration with
+        <strong>Prof. Jean-Marc Odobez</strong>
+        (Idiap Research Institute / EPFL)
+      </p>
+    </div>
+
+    <!-- Buttons -->
+    <div class="btn-row">
+      <!-- Paper PDF — replace href when available -->
+      <a class="btn-link primary" href="#" target="_blank">
+        <i class="fas fa-file-pdf"></i> Paper
+      </a>
+      <!-- arXiv — replace href when available -->
+      <a class="btn-link" href="#" target="_blank">
+        <i class="ai ai-arxiv"></i> arXiv
+      </a>
+      <!-- Code -->
+      <a class="btn-link" href="https://github.com/chihina/sagd-CVPRW2026" target="_blank">
+        <i class="fab fa-github"></i> Code
+      </a>
+    </div>
+
+  </div>
+</section>
+
+
+<!-- ======================================================
+     TL;DR
+====================================================== -->
+<section style="background:#eff6ff; padding: 1.4rem 1.5rem;">
+  <div class="section-inner" style="max-width:860px;">
+    <p style="margin:0 0 0.9rem; font-size:1.05rem; font-family:'Google Sans',sans-serif; font-weight:700; color:#1d4ed8; text-align:center; letter-spacing:0.02em;">
+      TL;DR
+    </p>
+    <ul style="margin:0; padding:0; list-style:none; display:flex; flex-direction:column; gap:0.55rem;">
+      <li style="display:flex; align-items:flex-start; gap:0.6rem; font-size:0.96rem; color:#1e3a5f; line-height:1.7;">
+        <span style="margin-top:0.3rem; color:#2563eb; flex-shrink:0;">&#9679;</span>
+        <span><strong>End-to-end shared attention estimation via group detection</strong> — unlike previous methods that separately address shared attention estimation and group detection, we propose to estimate shared attention <em>via</em> group detection, enabling full capture of group context.</span>
+      </li>
+      <li style="display:flex; align-items:flex-start; gap:0.6rem; font-size:0.96rem; color:#1e3a5f; line-height:1.7;">
+        <span style="margin-top:0.3rem; color:#2563eb; flex-shrink:0;">&#9679;</span>
+        <span><strong>Group membership approach for shared attention heatmap estimation</strong> — each group's shared attention heatmap is generated by weighting and aggregating individual attention maps based on estimated shared attention group memberships.</span>
+      </li>
+      <li style="display:flex; align-items:flex-start; gap:0.6rem; font-size:0.96rem; color:#1e3a5f; line-height:1.7;">
+        <span style="margin-top:0.3rem; color:#2563eb; flex-shrink:0;">&#9679;</span>
+        <span><strong>Shared attention refinement</strong> — a feedback refinement step re-estimates group memberships by conditioning on the initial shared attention heatmaps, improving both group detection and final shared attention prediction.</span>
+      </li>
+    </ul>
+  </div>
+</section>
+
+
+<!-- ======================================================
+     TEASER
+====================================================== -->
+<section class="section" style="padding: 3rem 1.5rem 2rem;">
+  <div class="section-inner">
+    <img src="static/images/teaser.png" alt="Teaser: comparison of shared attention estimation methods" style="width:100%;border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,0.08);">
+    <p class="caption">
+      <strong>Figure 1.</strong>
+      Difference between previous and our shared attention estimation methods.
+      (a) Shared attention estimation using simple post-processing over individual attention maps.
+      (b) Direct shared attention estimation without group detection.
+      (c) <strong>Our method</strong>: end-to-end shared attention estimation via group detection,
+      where shared attention is estimated by integrating individual attention based on detected groups.
+    </p>
+  </div>
+</section>
+
+
+<!-- ======================================================
+     ABSTRACT
+====================================================== -->
+<section class="section" style="padding: 2rem 1.5rem;">
+  <div class="section-inner">
+    <h2 class="section-title">Abstract</h2>
+    <div class="abstract-box">
+      <p>
+        This paper proposes an end-to-end shared attention estimation method via group detection.
+        Most previous methods estimate shared attention (SA) without detecting the actual group of people
+        focusing on it, or assume that there is a single SA point in a given image.
+        These issues limit the applicability of SA detection in practice and impact performance.
+        To address them, we propose to simultaneously achieve group detection and shared attention estimation
+        using a two-step process:
+        (i) the generation of SA heatmaps relying on individual gaze attention heatmaps and group membership
+        scalars estimated in a group inference;
+        (ii) a refinement of the initial group memberships allowing to account for the initial SA heatmaps,
+        and the final prediction of the SA heatmap.
+        Experiments demonstrate that our method outperforms other methods in group detection and shared
+        attention estimation. Additional analyses validate the effectiveness of the proposed components.
+      </p>
+    </div>
+  </div>
+</section>
+
+
+<!-- ======================================================
+     METHOD
+====================================================== -->
+<section class="section" style="padding: 2rem 1.5rem; background: #f8fafc;">
+  <div class="section-inner">
+    <h2 class="section-title">Method</h2>
+
+    <img src="static/images/method.png" alt="Method overview: network architecture" style="width:100%;border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,0.08);">
+    <p class="caption">
+      <strong>Figure 2.</strong>
+      Overview of our network. Individual attention heatmaps <em>A</em> are first estimated for each person.
+      They are exploited to derive group memberships per group token <em>M</em> and integrated to infer the
+      shared attention heatmap <em>S</em>.
+      Both group memberships and shared attention heatmaps are further refined in a second step.
+    </p>
+
+    <div class="method-steps">
+      <div class="step-card">
+        <span class="step-num">Step 1</span>
+        <h4>Individual Attention Estimation</h4>
+        <p>
+          For each person, head bounding box coordinates and the cropped head image are encoded as
+          person gaze tokens, processed by transformers along with image tokens to produce per-person
+          tokens <em>P</em>. These are decoded into individual attention heatmaps <em>A<sub>n</sub></em>.
+        </p>
+      </div>
+      <div class="step-card">
+        <span class="step-num">Step 2</span>
+        <h4>Initial Shared Attention via Group Detection</h4>
+        <p>
+          Learnable group tokens <em>G</em> interact with person tokens through cross-attention to infer
+          group membership coefficients <em>M<sub>e,n</sub></em>.
+          The shared attention heatmap for each group is computed as a membership-weighted sum of
+          individual attention heatmaps.
+        </p>
+      </div>
+      <div class="step-card">
+        <span class="step-num">Step 3</span>
+        <h4>Feedback Refinement</h4>
+        <p>
+          Spatial argmax of the initial SA heatmaps provides peak coordinates that are fed back to
+          refine group memberships <em>M&prime;</em>, enabling the final shared attention heatmap <em>S&prime;</em>
+          to benefit from both group context and initial SA estimates.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ======================================================
+     RESULTS
+====================================================== -->
+<section class="section" style="padding: 2rem 1.5rem;">
+  <div class="section-inner">
+    <h2 class="section-title">Results</h2>
+
+    <!-- ── Qualitative figure ── -->
+    <div style="display:inline-block; width:100%;">
+      <img src="static/images/results_videocoatt.png" alt="Qualitative results on VideoCoAtt dataset" style="width:100%;border-radius:10px 10px 0 0;box-shadow:0 4px 20px rgba(0,0,0,0.08); display:block;">
+      <div style="display:flex; background:#1a1a1a; border-radius:0 0 10px 10px; box-shadow:0 4px 20px rgba(0,0,0,0.08);">
+        <div style="flex:1; text-align:center; padding:0.5rem 0; font-size:0.88rem; font-weight:600; color:#e2e8f0; letter-spacing:0.03em; border-right:1px solid #333;">Ground-truth</div>
+        <div style="flex:1; text-align:center; padding:0.5rem 0; font-size:0.88rem; font-weight:600; color:#e2e8f0; letter-spacing:0.03em; border-right:1px solid #333;">MTGS-PP</div>
+        <div style="flex:1; text-align:center; padding:0.5rem 0; font-size:0.88rem; font-weight:700; color:#60a5fa; letter-spacing:0.03em;">Ours</div>
+      </div>
+    </div>
+    <p class="caption">
+      <strong>Figure 3.</strong>
+      Visual comparison on the VideoCoAtt dataset. People joining the same group are enclosed within a
+      rectangle of the same color. The estimated shared attention point for each group is visualized as a
+      colored dot. Our method correctly detects groups and localizes shared attention targets where
+      competing methods fail.
+    </p>
+
+    <!-- ── Quantitative table: VideoCoAtt ── -->
+    <h3 style="font-family:'Google Sans',sans-serif; font-size:1.15rem; font-weight:700; color:#0f172a; margin: 2rem 0 0.5rem; text-align:center;">
+      Quantitative Results — VideoCoAtt Dataset
+    </h3>
+    <div class="results-table-wrap">
+      <table class="results-table">
+        <thead>
+          <tr>
+            <th rowspan="2" style="text-align:left;">Method</th>
+            <th colspan="3">&theta;<sub>IoU</sub> = 0.5</th>
+            <th colspan="3">&theta;<sub>IoU</sub> = 1.0</th>
+          </tr>
+          <tr>
+            <th>&theta;<sub>Dist</sub>=0.05</th>
+            <th>&theta;<sub>Dist</sub>=0.1</th>
+            <th>&theta;<sub>Dist</sub>=&infin;</th>
+            <th>&theta;<sub>Dist</sub>=0.05</th>
+            <th>&theta;<sub>Dist</sub>=0.1</th>
+            <th>&theta;<sub>Dist</sub>=&infin;</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="text-align:left;">MTGS-PP&nbsp;<span style="color:#64748b;font-size:0.8rem;">[NeurIPS&nbsp;2024]</span></td>
+            <td>16.4</td><td>20.7</td><td>37.5</td>
+            <td>7.1</td><td>8.6</td><td>11.3</td>
+          </tr>
+          <tr>
+            <td style="text-align:left;">MTGS-Soc.&nbsp;<span style="color:#64748b;font-size:0.8rem;">[NeurIPS&nbsp;2024]</span></td>
+            <td>5.7</td><td>7.8</td><td>28.6</td>
+            <td>2.9</td><td>3.6</td><td>9.8</td>
+          </tr>
+          <tr>
+            <td style="text-align:left;">Gaze-LLE-PP&nbsp;<span style="color:#64748b;font-size:0.8rem;">[CVPR&nbsp;2025]</span></td>
+            <td>15.6</td><td>19.5</td><td>26.3</td>
+            <td>5.7</td><td>6.9</td><td>8.2</td>
+          </tr>
+          <tr class="ours">
+            <td style="text-align:left;">&#x2605;&nbsp;Ours</td>
+            <td class="best">32.4</td>
+            <td class="best">41.0</td>
+            <td class="best">61.7</td>
+            <td class="best">12.5</td>
+            <td class="best">15.9</td>
+            <td class="best">17.7</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="caption">
+      <strong>Table 1.</strong>
+      GroupAP (%) comparison on the VideoCoAtt dataset. Our method outperforms all baselines across
+      every setting. Results in <span style="color:#dc2626;font-weight:700;">red</span> indicate the best score per column.
+    </p>
+
+    <!-- ── Quantitative table: VideoAttentionTarget ── -->
+    <h3 style="font-family:'Google Sans',sans-serif; font-size:1.15rem; font-weight:700; color:#0f172a; margin: 2rem 0 0.5rem; text-align:center;">
+      Quantitative Results — VideoAttentionTarget Dataset
+    </h3>
+    <div class="results-table-wrap">
+      <table class="results-table">
+        <thead>
+          <tr>
+            <th rowspan="2" style="text-align:left;">Method</th>
+            <th colspan="3">&theta;<sub>IoU</sub> = 0.5</th>
+            <th colspan="3">&theta;<sub>IoU</sub> = 1.0</th>
+          </tr>
+          <tr>
+            <th>&theta;<sub>Dist</sub>=0.05</th>
+            <th>&theta;<sub>Dist</sub>=0.1</th>
+            <th>&theta;<sub>Dist</sub>=&infin;</th>
+            <th>&theta;<sub>Dist</sub>=0.05</th>
+            <th>&theta;<sub>Dist</sub>=0.1</th>
+            <th>&theta;<sub>Dist</sub>=&infin;</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="text-align:left;">MTGS-PP</td>
+            <td class="best">30.3</td><td class="best">35.6</td><td class="best">66.0</td>
+            <td>5.1</td><td>6.3</td><td>9.0</td>
+          </tr>
+          <tr>
+            <td style="text-align:left;">MTGS-Soc.</td>
+            <td>7.6</td><td>9.9</td><td>37.2</td>
+            <td>1.5</td><td>1.9</td><td>4.7</td>
+          </tr>
+          <tr>
+            <td style="text-align:left;">Gaze-LLE-PP</td>
+            <td>7.5</td><td>8.5</td><td>12.4</td>
+            <td>2.9</td><td>3.0</td><td>3.3</td>
+          </tr>
+          <tr class="ours">
+            <td style="text-align:left;">&#x2605;&nbsp;Ours</td>
+            <td>27.2</td><td>33.5</td><td>52.0</td>
+            <td class="best">7.5</td>
+            <td class="best">10.1</td>
+            <td class="best">12.0</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="caption">
+      <strong>Table 2.</strong>
+      GroupAP (%) on the VideoAttentionTarget dataset.
+      Our method achieves the best performance under strict group detection criteria (&theta;<sub>IoU</sub> = 1.0).
+    </p>
+
+    <!-- ── Quantitative table: ChildPlay ── -->
+    <h3 style="font-family:'Google Sans',sans-serif; font-size:1.15rem; font-weight:700; color:#0f172a; margin: 2rem 0 0.5rem; text-align:center;">
+      Quantitative Results — ChildPlay Dataset
+    </h3>
+    <div class="results-table-wrap">
+      <table class="results-table">
+        <thead>
+          <tr>
+            <th rowspan="2" style="text-align:left;">Method</th>
+            <th colspan="3">&theta;<sub>IoU</sub> = 0.5</th>
+            <th colspan="3">&theta;<sub>IoU</sub> = 1.0</th>
+          </tr>
+          <tr>
+            <th>&theta;<sub>Dist</sub>=0.05</th>
+            <th>&theta;<sub>Dist</sub>=0.1</th>
+            <th>&theta;<sub>Dist</sub>=&infin;</th>
+            <th>&theta;<sub>Dist</sub>=0.05</th>
+            <th>&theta;<sub>Dist</sub>=0.1</th>
+            <th>&theta;<sub>Dist</sub>=&infin;</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="text-align:left;">MTGS-PP</td>
+            <td>7.8</td><td>13.9</td><td>25.4</td>
+            <td class="best">4.6</td><td class="best">5.2</td><td class="best">5.6</td>
+          </tr>
+          <tr>
+            <td style="text-align:left;">MTGS-Soc.</td>
+            <td>0.8</td><td>1.8</td><td>9.1</td>
+            <td>0.7</td><td>0.7</td><td>1.3</td>
+          </tr>
+          <tr>
+            <td style="text-align:left;">Gaze-LLE-PP</td>
+            <td>5.8</td><td>8.1</td><td>14.1</td>
+            <td>2.4</td><td>2.8</td><td>4.4</td>
+          </tr>
+          <tr class="ours">
+            <td style="text-align:left;">&#x2605;&nbsp;Ours</td>
+            <td class="best">9.0</td>
+            <td class="best">15.6</td>
+            <td class="best">36.3</td>
+            <td>2.1</td><td>2.1</td><td>2.4</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="caption">
+      <strong>Table 3.</strong>
+      GroupAP (%) on the ChildPlay dataset.
+      Our method achieves best performance under lenient criteria (&theta;<sub>IoU</sub> = 0.5),
+      especially at &theta;<sub>Dist</sub> = &infin; (36.3% vs. 25.4% for the best baseline).
+    </p>
+  </div>
+</section>
+
+
+<!-- ======================================================
+     BIBTEX
+====================================================== -->
+<section class="section" style="padding: 2rem 1.5rem; background: #f8fafc;">
+  <div class="section-inner">
+    <h2 class="section-title">BibTeX</h2>
+    <div class="bibtex-box" id="bibtex">
+      <button class="copy-btn" onclick="copyBibtex()"><i class="fas fa-copy"></i> Copy</button>
+<pre style="margin:0; background:transparent; padding:0; color:inherit;">@inproceedings{nakatani2026sagd,
+  title     = {End-to-End Shared Attention Estimation via Group Detection
+               with Feedback Refinement},
+  author    = {Nakatani, Chihiro and Ukita, Norimichi and Odobez, Jean-Marc},
+  booktitle = {Proceedings of the IEEE/CVF Conference on Computer Vision
+               and Pattern Recognition Workshops (CVPRW)},
+  year      = {2026},
+}</pre>
+    </div>
+  </div>
+</section>
+
+
+<!-- ======================================================
+     ACKNOWLEDGEMENTS
+====================================================== -->
+<section class="section" style="padding: 2rem 1.5rem;">
+  <div class="section-inner">
+    <h2 class="section-title">Acknowledgements</h2>
+    <p style="text-align:center; color:#475569; font-size:0.95rem; line-height:1.8; max-width:700px; margin:0 auto;">
+      This work was conducted in collaboration with
+      <strong>Prof. Jean-Marc Odobez</strong> at the Idiap Research Institute and
+      École polytechnique fédérale de Lausanne (EPFL), Switzerland.
+      <!-- Add any additional acknowledgements, funding sources, etc. here. -->
+    </p>
+  </div>
+</section>
+
+
+<!-- ======================================================
+     FOOTER
+====================================================== -->
+<footer>
+  <p>
+    <strong style="color:#e2e8f0;">End-to-End Shared Attention Estimation via Group Detection with Feedback Refinement</strong><br/>
+    CVPR 2026 Workshop on Eye and Gaze in Computer Vision (GAZE 2026)
+  </p>
+  <p style="margin-top:0.75rem;">
+    Website template inspired by
+    <a href="https://nerfies.github.io" target="_blank">Nerfies</a>.
+    Code available at
+    <a href="https://github.com/chihina/sagd-CVPRW2026" target="_blank">GitHub</a>.
+  </p>
+</footer>
+
+
+<!-- ======================================================
+     SCRIPTS
+====================================================== -->
+<script>
+  function copyBibtex() {
+    const pre = document.querySelector('#bibtex pre');
+    navigator.clipboard.writeText(pre.innerText).then(() => {
+      const btn = document.querySelector('.copy-btn');
+      btn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+      setTimeout(() => {
+        btn.innerHTML = '<i class="fas fa-copy"></i> Copy';
+      }, 2000);
+    });
+  }
+</script>
+
+</body>
+</html>
